@@ -66,7 +66,7 @@ transp <- transp %>%
   )) %>% 
   mutate(total_transparency_score = arthikain + annual_report + planspoli + redbook + Quality_score)
 
-data1 <- inner_join(transp, fisc_irregularity, by = c("Local Level" = "local", "District" = "district"))
+data1 <- left_join(transp, fisc_irregularity, by = c("Local Level" = "local", "District" = "district"))
 
 #merging with the shape file
 Madhesh_shape <- read_sf("G://local_level_gis//local_level.shp")
@@ -103,12 +103,82 @@ merged_data_shape <- merged_data_shape %>%
   filter(UNIT_NAME.dist == min(UNIT_NAME.dist)) %>% 
   ungroup()
 
-
-#To see which obs is repeated in the shape file
+#To see which obs is repeated in the shape file -- not necessary now
 composite_key_counts <- merged_data_shape %>%
   group_by(composite_key) %>%
   summarise(count = n()) %>%
   filter(count > 1)
+
+#Remove all the unnecessary dataframes created
+rm(Madhesh_shape, shape_try, unmatched, composite_key_counts)
+
+#------------------------------Results------------------------------------------
+
+#1. For transparency- Seeing the result for individual component
+transp %>% group_by(total_transparency_score) %>% 
+  count(Type) %>% 
+  ungroup()
+transp %>% count(redbook)
+transp %>% count(planspoli)
+transp %>%count(annual_report)
+transp %>% count(arthikain)
+transp %>% count(Quality_score)
+
+rm(transp_long)
+transp_long <- transp %>% 
+  pivot_longer(cols = c(redbook, planspoli, annual_report, arthikain, Quality_score),
+               names_to = "Variable", values_to = "Value")
+
+#To see the numbers of uploaded documents
+count_data_transp <- transp %>% 
+  select(redbook, planspoli, annual_report, arthikain) %>% 
+  rename("Red Book" = redbook,
+         "Plans and Policies" = planspoli,
+         "Annual Report"= annual_report ,
+         "Financial Act" = arthikain) %>% 
+  pivot_longer(cols = everything(), names_to = "Category", values_to = "Value") %>% 
+  mutate(Value = factor(Value, levels = c(0,1), labels = c("Not-Uploaded", "Uploaded")))%>% 
+  group_by(Category, Value) %>%
+  rename("Document Status" = Value) %>% 
+  summarise(Count = n(), .groups = "drop")
+
+ggplot(count_data_transp, aes(x = Category, y = Count, fill = as.factor(`Document Status`))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("Not-Uploaded" = "#1C0F0F","Uploaded" = "#A3A3A3"))+ 
+  labs(title = "Number and Status of Document Uploads by Local Governments",
+       x = "Document Type", y = "Number of Local Levels", fill = "`Document Status`") +
+  theme_minimal()
+
+#----------------------------Visualization--------------------------------------
+
+#GGPLOT
+ggplot(data = merged_data_shape) +
+  geom_sf(aes(fill = `Score for Capital Expenditure as share of total expenditure`))+
+  scale_fill_viridis_c(option = "D", na.value = "transparent")+
+  theme_minimal()+
+  ggtitle("Theme: Resource Use")
+
+#different color choice
+
+merged_data_shape <- merged_data_shape %>%
+  mutate(score_category = cut(`Score for Capital Expenditure as share of total expenditure`, 
+                              breaks = 5, 
+                              labels = c("Score: 1", "Score: 2", "Score: 3", "Score: 4", "Score: 5")))
+
+
+ggplot(data = merged_data_shape) +
+  geom_sf(aes(fill = score_category))+
+  scale_fill_manual(values = c(
+    "Score: 1" = "#E0E0E0",      
+    "Score: 2" = "#C7C7C7",
+    "Score: 3" = "#A3A3A3",    
+    "Score: 4" = "#707070",    
+    "Score: 5" = "#1C0F0F"     
+  ), na.value = "transparent") + 
+  theme_minimal()+
+  ggtitle("Theme: Resource Use")
+
+
 
 
 
