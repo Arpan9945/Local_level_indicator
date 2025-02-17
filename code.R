@@ -142,6 +142,7 @@ count_data_transp <- transp %>%
   rename("Document Status" = Value) %>% 
   summarise(Count = n(), .groups = "drop")
 
+#Plotting Document Status bar-graph
 ggplot(count_data_transp, aes(x = Category, y = Count, fill = as.factor(`Document Status`))) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_fill_manual(values = c("Not-Uploaded" = "#1C0F0F","Uploaded" = "#A3A3A3"))+ 
@@ -149,32 +150,54 @@ ggplot(count_data_transp, aes(x = Category, y = Count, fill = as.factor(`Documen
        x = "Document Type", y = "Number of Local Levels", fill = "`Document Status`") +
   theme_minimal()
 
+merged_data_shape <- merged_data_shape %>% 
+  mutate(total_transparency_score = as.factor(total_transparency_score))
+
+#Plotting transparency score in map
+ggplot(data = merged_data_shape) +
+  geom_sf(aes(fill = total_transparency_score)) +
+  scale_fill_manual(name = "Score",
+                    values = c("0" = "#cecece",
+                               "1" = "#9d9d9d", 
+                               "2" = "#858585", 
+                               "3" = "#545454", 
+                               "4" = "#232323", 
+                               "5" = "#FDE725"),
+                    na.value = "#ffffff") +
+  theme_minimal() +
+  ggtitle("Composite Index of Transparency")
+
+
+
+
+
 #----------------------------Visualization--------------------------------------
 
 #GGPLOT
 ggplot(data = merged_data_shape) +
-  geom_sf(aes(fill = `Score for Capital Expenditure as share of total expenditure`))+
+  geom_sf(aes(fill = `total_transparency_score`))+
+  scale_fill_manual(values = c("#858585", "#6d6d6d","#545454","#3c3c3c","#232323"), na.value = "#0b0b0b")
   scale_fill_viridis_c(option = "D", na.value = "transparent")+
   theme_minimal()+
   ggtitle("Theme: Resource Use")
 
 #different color choice
 
-merged_data_shape <- merged_data_shape %>%
-  mutate(score_category = cut(`Score for Capital Expenditure as share of total expenditure`, 
-                              breaks = 5, 
-                              labels = c("Score: 1", "Score: 2", "Score: 3", "Score: 4", "Score: 5")))
+merged_data_shape1 <- merged_data_shape %>%
+  mutate(score_category = cut(total_transparency_score, 
+                              breaks = c(0, 1, 2, 3, 4, 5, Inf), 
+                              labels = c("Score: 0", "Score: 1", "Score: 2", "Score: 3", "Score: 4", "Score: 5")))
 
 
-ggplot(data = merged_data_shape) +
+ggplot(data = merged_data_shape1) +
   geom_sf(aes(fill = score_category))+
   scale_fill_manual(values = c(
-    "Score: 1" = "#E0E0E0",      
-    "Score: 2" = "#C7C7C7",
-    "Score: 3" = "#A3A3A3",    
-    "Score: 4" = "#707070",    
-    "Score: 5" = "#1C0F0F"     
-  ), na.value = "transparent") + 
+    "Score: 1" = "#858585",      
+    "Score: 2" = "#6d6d6d",
+    "Score: 3" = "#545454",    
+    "Score: 4" = "#3c3c3c",    
+    "Score: 5" = "#232323"     
+  ), na.value = "#0b0b0b") + 
   theme_minimal()+
   ggtitle("Theme: Resource Use")
 
