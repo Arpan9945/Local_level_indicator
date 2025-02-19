@@ -5,6 +5,7 @@ library(tidyr)
 library(readxl)
 library(sf)
 library(fuzzyjoin)
+library(writexl)
 
 #initial data
 master_Data <- read_excel("List of all local levels.xlsx")
@@ -374,8 +375,6 @@ ggplot(data = merged_data_shape) +
   labs(caption = "Higher the score, the better the local level is in terms of Revenue Generation.")
 
 # 3.3 Capital Expenditure
-Capital_exp_share
-`Score for Capital Expenditure as share of total expenditure`
 
 top5capexp <- merged_data_shape %>% 
   select(DISTRICT, UNIT_TYPE, UNIT_NAME, Capital_exp_share) %>%
@@ -419,6 +418,8 @@ ggplot(data = merged_data_shape) +
 
 # Create the plot (Plot: Public Service delivery 1)
 
+
+
 mean_value <- merged_data_shape%>% 
   select(DISTRICT, UNIT_TYPE, nagarikwadapatra)
 
@@ -433,7 +434,7 @@ total_value <- mean_value %>%
   summarise(Total= n(), .groups = "drop") %>% 
   st_drop_geometry()
 
-mean_value <- mean_value %>% 
+actual_value <- mean_value %>% 
   filter(nagarikwadapatra > 0) %>% 
   mutate(UNIT_TYPE = case_when(
     UNIT_TYPE %in% c("Mahanagarpalika", "Upamahanagarpalika", "Nagarpalika") ~ "Municipality",
@@ -444,7 +445,7 @@ mean_value <- mean_value %>%
   summarise(Count = n(), .groups = "drop") %>% 
   st_drop_geometry()
 
-final_value <- full_join(mean_value, total_value, by = c("DISTRICT", "UNIT_TYPE"))
+final_value <- full_join(actual_value, total_value, by = c("DISTRICT", "UNIT_TYPE"))
 
 ggplot(final_value, aes(x = DISTRICT, fill = UNIT_TYPE)) +
   # Background bars for Total (separate for each UNIT_TYPE)
@@ -467,7 +468,7 @@ ggplot(final_value, aes(x = DISTRICT, fill = UNIT_TYPE)) +
                                "Rural_municipality" = "Rural Municipality")) +
   theme_minimal() +
   labs(
-    title = "Number of Local Levels with Percentage Fiscal Irregularities Above National Average (District-wise)",
+    title = "Number of Local Levels that have uploaded Nagarik Wadapatra (District-wise)",
     x = "District",
     y = "Number of Local Levels",
     fill = "Municipality Type",
@@ -475,10 +476,17 @@ ggplot(final_value, aes(x = DISTRICT, fill = UNIT_TYPE)) +
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-#----------------------------Visualization--------------------------------------
+#----------------------------Annex--------------------------------------
 
+finaldataframe<- merged_data_shape %>% 
+  select("DISTRICT", "UNIT_TYPE", "UNIT_NAME", "total_transparency_score", "total_public_service_delivery",
+         "Score for Capital Expenditure as share of total expenditure", 
+         "irregularity score" , "resource used score", "Score for Internal Revenue Generating Capacity",
+         "Score for Capital Expenditure as share of total expenditure") %>% 
+  st_drop_geometry() %>% 
+  mutate(`Complaints score` = 0)
 
-
+write_xlsx(finaldataframe, "Annex.xlsx")
 
 
 
